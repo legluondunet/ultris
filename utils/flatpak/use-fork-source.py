@@ -1,8 +1,8 @@
 #!/usr/bin/env python3
 """Use the checked-out fork sources with Flathub's Lutris packaging manifest."""
-from pathlib import Path
 import re
 import sys
+from pathlib import Path
 
 manifest = Path(sys.argv[1])
 source = manifest.read_text()
