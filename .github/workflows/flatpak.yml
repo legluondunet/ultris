@@ -54,7 +54,7 @@ jobs:
 
       - name: Install Flatpak build dependencies
         working-directory: flatpak-packaging
-        run: flatpak-builder --user --install-deps-from=flathub --assumeyes --noninteractive build-dir net.lutris.Lutris.yml
+        run: flatpak-builder --user --install-deps-from=flathub --assumeyes build-dir net.lutris.Lutris.yml
 
       - name: Build Flatpak
         working-directory: flatpak-packaging
