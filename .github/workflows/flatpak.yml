@@ -54,7 +54,21 @@ jobs:
 
       - name: Install Flatpak build dependencies
         working-directory: flatpak-packaging
-        run: flatpak-builder --user --install-deps-from=flathub --assumeyes build-dir net.lutris.Lutris.yml
+        shell: bash
+        run: |
+          # Flathub's large dependency graph downloads many upstream archives.
+          # Retry transient TLS/network failures; flatpak-builder caches downloads.
+          for attempt in 1 2 3 4; do
+            if flatpak-builder --user --install-deps-from=flathub --assumeyes build-dir net.lutris.Lutris.yml; then
+              exit 0
+            fi
+            if (( attempt == 4 )); then
+              echo "Flatpak dependency download failed after 4 attempts" >&2
+              exit 1
+            fi
+            echo "Dependency download failed (attempt ${attempt}/4); retrying in 20 seconds..."
+            sleep 20
+          done
 
       - name: Build Flatpak
         working-directory: flatpak-packaging
