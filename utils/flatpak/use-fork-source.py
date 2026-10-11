@@ -17,9 +17,12 @@ pattern = (
     r"        url: https://github.com/lutris/lutris.git\n"
     r"        commit: [0-9a-f]+\n"
 )
-updated, count = re.subn(pattern, r"\g<1>      - type: dir\n        path: lutris-source\n", source)
+updated, count = re.subn(
+    pattern, r"\g<1>      - type: dir\n        path: lutris-source\n", source
+)
 if count != 1:
     sys.exit(f"Expected exactly one upstream Lutris source entry; found {count}")
+
 # GLU's Meson default installs glu.pc under /app/lib64/pkgconfig,
 # but the subsequent mesa-demos module looks for it under /app/lib/pkgconfig.
 glu_module = "  - name: glu\n    buildsystem: meson\n"
@@ -39,23 +42,23 @@ ayatana_manifest = (
 ayatana = json.loads(ayatana_manifest.read_text())
 
 
-def fix_ayatana_ido(value):
+def fix_ayatana_libraries(value):
     if isinstance(value, dict):
-        if value.get("name") in ("ayatana-ido", "libayatana-ido"):
+        if value.get("name") in ("ayatana-ido", "libayatana-ido", "libayatana-indicator"):
             opts = value.setdefault("config-opts", [])
             if "-DCMAKE_INSTALL_LIBDIR=lib" not in opts:
                 opts.append("-DCMAKE_INSTALL_LIBDIR=lib")
             return 1
-        return sum(fix_ayatana_ido(child) for child in value.values())
+        return sum(fix_ayatana_libraries(child) for child in value.values())
     if isinstance(value, list):
-        return sum(fix_ayatana_ido(child) for child in value)
+        return sum(fix_ayatana_libraries(child) for child in value)
     return 0
 
 
-if fix_ayatana_ido(ayatana) != 1:
-    sys.exit("Expected exactly one Ayatana Ido module in shared packaging")
+if fix_ayatana_libraries(ayatana) != 2:
+    sys.exit("Expected Ayatana Ido and Indicator modules in shared packaging")
 ayatana_manifest.write_text(json.dumps(ayatana, indent=2) + "\n")
 
 manifest.write_text(updated)
-print("Flathub manifest now builds the fork with GLU and Ayatana Ido in /app/lib.")
+print("Flathub manifest now builds the fork with GLU and Ayatana libraries in /app/lib.")
 
