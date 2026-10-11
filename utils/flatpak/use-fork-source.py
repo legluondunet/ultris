@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 """Use the checked-out fork sources with Flathub's Lutris packaging manifest."""
 
+import json
 import re
 import sys
 from pathlib import Path
@@ -30,6 +31,29 @@ updated = updated.replace(
     1,
 )
 
+# The Flathub shared module installs Ayatana Ido in lib64 by default.
+# Its dependent libayatana-indicator module searches /app/lib instead.
+ayatana_manifest = manifest.parent / "shared-modules/libayatana-appindicator/libayatana-appindicator-gtk3.json"
+ayatana = json.loads(ayatana_manifest.read_text())
+
+
+def fix_ayatana_ido(value):
+    if isinstance(value, dict):
+        if value.get("name") in ("ayatana-ido", "libayatana-ido"):
+            opts = value.setdefault("config-opts", [])
+            if "-DCMAKE_INSTALL_LIBDIR=lib" not in opts:
+                opts.append("-DCMAKE_INSTALL_LIBDIR=lib")
+            return 1
+        return sum(fix_ayatana_ido(child) for child in value.values())
+    if isinstance(value, list):
+        return sum(fix_ayatana_ido(child) for child in value)
+    return 0
+
+
+if fix_ayatana_ido(ayatana) != 1:
+    sys.exit("Expected exactly one Ayatana Ido module in shared packaging")
+ayatana_manifest.write_text(json.dumps(ayatana, indent=2) + "\\n")
+
 manifest.write_text(updated)
-print("Flathub manifest now builds the fork and installs native GLU under /app/lib.")
+print("Flathub manifest now builds the fork with native GLU and Ayatana Ido in /app/lib.")
 
