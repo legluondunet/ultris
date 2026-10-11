@@ -1,0 +1,76 @@
+name: Build Flatpak
+
+on:
+  pull_request:
+    paths:
+      - ".github/workflows/flatpak.yml"
+      - "utils/flatpak/**"
+      - "meson.build"
+      - "pyproject.toml"
+      - "lutris/**"
+      - "bin/**"
+      - "share/**"
+  push:
+    tags:
+      - "v*"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  flatpak:
+    name: Flatpak (x86_64)
+    runs-on: ubuntu-24.04
+    timeout-minutes: 300
+    steps:
+      - name: Checkout Lutris fork
+        uses: actions/checkout@v4
+        with:
+          path: lutris-source
+
+      - name: Checkout Flathub packaging
+        uses: actions/checkout@v4
+        with:
+          repository: flathub/net.lutris.Lutris
+          ref: 067090ef45b2248c2f17ae9d117d474a43eb3a07
+          submodules: recursive
+          path: flatpak-packaging
+
+      - name: Install Flatpak builder
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y flatpak flatpak-builder rsync
+          flatpak remote-add --user --if-not-exists flathub https://flathub.org/repo/flathub.flatpakrepo
+
+      - name: Prepare fork source in packaging tree
+        shell: bash
+        run: |
+          mkdir -p flatpak-packaging/lutris-source
+          rsync -a --exclude=.git --exclude=dist/ --exclude=.github/ \
+            lutris-source/ flatpak-packaging/lutris-source/
+          python3 lutris-source/utils/flatpak/use-fork-source.py \
+            flatpak-packaging/net.lutris.Lutris.yml
+
+      - name: Install Flatpak build dependencies
+        working-directory: flatpak-packaging
+        run: flatpak-builder --user --install-deps-from=flathub --assumeyes --noninteractive build-dir net.lutris.Lutris.yml
+
+      - name: Build Flatpak
+        working-directory: flatpak-packaging
+        run: flatpak-builder --force-clean --repo=repo build-dir net.lutris.Lutris.yml
+
+      - name: Export standalone Flatpak bundle
+        working-directory: flatpak-packaging
+        run: flatpak build-bundle repo Lutris-x86_64.flatpak net.lutris.Lutris master
+
+      - name: Verify bundle
+        run: test -s flatpak-packaging/Lutris-x86_64.flatpak
+
+      - name: Upload Flatpak artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: lutris-flatpak-x86_64
+          path: flatpak-packaging/Lutris-x86_64.flatpak
+          if-no-files-found: error
+          retention-days: 14
