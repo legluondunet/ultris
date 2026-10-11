@@ -36,13 +36,13 @@ updated = updated.replace(
 
 # DOSBox Staging's optional FluidSynth fallback tries to download a source
 # archive from inside Flatpak's network-isolated build sandbox.
-dosbox_module = "  - name: dosbox-staging\\n    buildsystem: meson\\n"
+dosbox_module = "  - name: dosbox-staging\n    buildsystem: meson\n"
 if updated.count(dosbox_module) != 1:
     sys.exit("Expected exactly one DOSBox Staging module")
 updated = updated.replace(
     dosbox_module,
-    "  - name: dosbox-staging\\n    buildsystem: meson\\n"
-    "    config-opts:\\n      - -Duse_fluidsynth=false\\n",
+    "  - name: dosbox-staging\n    buildsystem: meson\n"
+    "    config-opts:\n      - -Duse_fluidsynth=false\n",
     1,
 )
 
