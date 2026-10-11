@@ -59,7 +59,7 @@ jobs:
           # Flathub's large dependency graph downloads many upstream archives.
           # Retry transient TLS/network failures; flatpak-builder caches downloads.
           for attempt in 1 2 3 4; do
-            if flatpak-builder --user --install-deps-from=flathub --assumeyes build-dir net.lutris.Lutris.yml; then
+            if flatpak-builder --force-clean --user --install-deps-from=flathub --assumeyes --repo=repo build-dir net.lutris.Lutris.yml; then
               exit 0
             fi
             if (( attempt == 4 )); then
@@ -69,10 +69,6 @@ jobs:
             echo "Dependency download failed (attempt ${attempt}/4); retrying in 20 seconds..."
             sleep 20
           done
-
-      - name: Build Flatpak
-        working-directory: flatpak-packaging
-        run: flatpak-builder --force-clean --repo=repo build-dir net.lutris.Lutris.yml
 
       - name: Export standalone Flatpak bundle
         working-directory: flatpak-packaging
