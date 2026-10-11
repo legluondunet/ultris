@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 """Use the checked-out fork sources with Flathub's Lutris packaging manifest."""
+
 import re
 import sys
 from pathlib import Path
