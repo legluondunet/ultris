@@ -33,7 +33,9 @@ updated = updated.replace(
 
 # The Flathub shared module installs Ayatana Ido in lib64 by default.
 # Its dependent libayatana-indicator module searches /app/lib instead.
-ayatana_manifest = manifest.parent / "shared-modules/libayatana-appindicator/libayatana-appindicator-gtk3.json"
+ayatana_manifest = (
+    manifest.parent / "shared-modules/libayatana-appindicator/libayatana-appindicator-gtk3.json"
+)
 ayatana = json.loads(ayatana_manifest.read_text())
 
 
@@ -52,8 +54,8 @@ def fix_ayatana_ido(value):
 
 if fix_ayatana_ido(ayatana) != 1:
     sys.exit("Expected exactly one Ayatana Ido module in shared packaging")
-ayatana_manifest.write_text(json.dumps(ayatana, indent=2) + "\\n")
+ayatana_manifest.write_text(json.dumps(ayatana, indent=2) + "\n")
 
 manifest.write_text(updated)
-print("Flathub manifest now builds the fork with native GLU and Ayatana Ido in /app/lib.")
+print("Flathub manifest now builds the fork with GLU and Ayatana Ido in /app/lib.")
 
