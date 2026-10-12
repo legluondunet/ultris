@@ -42,7 +42,7 @@ if updated.count(dosbox_module) != 1:
 updated = updated.replace(
     dosbox_module,
     "  - name: dosbox-staging\n    buildsystem: meson\n"
-    "    config-opts:\n      - -Duse_fluidsynth=false\n",
+    "    config-opts:\n      - -Duse_fluidsynth=false\n      - -Duse_slirp=false\n",
     1,
 )
 
