@@ -78,6 +78,8 @@ updated = updated.replace(
     "        buildsystem: simple\n"
     "        build-commands:\n"
     "          - cp -a asio/include/. /app/include/\n"
+    "          - mkdir -p /app/lib/pkgconfig\n"
+    "          - \"printf '%s\\\\n' 'prefix=/app' 'includedir=${prefix}/include' '' 'Name: Asio' 'Description: Standalone Asio headers' 'Version: 1.30.2' 'Cflags: -I${includedir}' > /app/lib/pkgconfig/asio.pc\"\n"
     "          - install -Dm644 asio/LICENSE_1_0.txt /app/share/licenses/asio/LICENSE_1_0.txt\n"
     "        sources:\n"
     "          - type: archive\n"
