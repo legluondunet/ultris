@@ -44,6 +44,17 @@ updated = updated.replace(
     1,
 )
 
+# Munt otherwise installs mt32emu.pc under /app/lib64/pkgconfig, which
+# DOSBox Staging does not search before trying its network-only fallback.
+munt_module = "      - name: munt\n        buildsystem: cmake-ninja\n        config-opts:\n"
+if updated.count(munt_module) != 1:
+    sys.exit("Expected exactly one Munt module")
+updated = updated.replace(
+    munt_module,
+    munt_module + "          - -DCMAKE_INSTALL_LIBDIR=lib\n",
+    1,
+)
+
 # The Flathub shared module installs Ayatana Ido in lib64 by default.
 # Its dependent libayatana-indicator module searches /app/lib instead.
 ayatana_manifest = manifest.parent / "shared-modules/libayatana-appindicator/libayatana-appindicator-gtk3.json"
