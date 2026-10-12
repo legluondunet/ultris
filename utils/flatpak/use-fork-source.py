@@ -32,6 +32,50 @@ updated = updated.replace(
     1,
 )
 
+# Upgrade the pinned Flathub DOSBox source while preserving the working package.
+dosbox_source = (
+    "        url: https://github.com/dosbox-staging/dosbox-staging/archive/v0.79.1.tar.gz\n"
+    "        sha256: 43f23fd0a5cff55e06a3ba2be8403f872ae47423f3bb4f823301eaae8a39ac2f\n"
+)
+if updated.count(dosbox_source) != 1:
+    sys.exit("Expected exactly one DOSBox Staging 0.79.1 source")
+updated = updated.replace(
+    dosbox_source,
+    "        url: https://github.com/dosbox-staging/dosbox-staging/archive/refs/tags/v0.83.0.tar.gz\n"
+    "        sha256: 9b36be5a666784adaeffa560bd0950691f851a76bdb97e7ae3c989561e91caf3\n",
+    1,
+)
+
+# The 0.79.1 SDL2_net include fix is obsolete: 0.83.0's DOS sources no longer use SDL_net.h.
+dosbox_patch = (
+    "      # SDL2_net headers are no longer next to SDL2's, libdos needs the dep for SDL_net.h\n"
+    "      - type: patch\n"
+    "        path: patches/dosbox-staging-libdos-sdl2-net.patch\n"
+)
+if updated.count(dosbox_patch) != 1:
+    sys.exit("Expected exactly one legacy DOSBox SDL2_net patch")
+updated = updated.replace(dosbox_patch, "", 1)
+
+# DOSBox 0.83 requires standalone Asio headers. Download them outside the sandbox.
+dosbox_dependencies = "    modules:\n      # SDL2_net was dropped from the 26.08 runtime\n"
+if updated.count(dosbox_dependencies) != 1:
+    sys.exit("Expected exactly one DOSBox dependency list")
+updated = updated.replace(
+    dosbox_dependencies,
+    "    modules:\n"
+    "      - name: asio\n"
+    "        buildsystem: simple\n"
+    "        build-commands:\n"
+    "          - cp -a asio/include/. /app/include/\n"
+    "          - install -Dm644 asio/LICENSE_1_0.txt /app/share/licenses/asio/LICENSE_1_0.txt\n"
+    "        sources:\n"
+    "          - type: archive\n"
+    "            url: https://github.com/chriskohlhoff/asio/archive/refs/tags/asio-1-30-2.tar.gz\n"
+    "            sha256: 755bd7f85a4b269c67ae0ea254907c078d408cce8e1a352ad2ed664d233780e8\n"
+    "      # SDL2_net was dropped from the 26.08 runtime\n",
+    1,
+)
+
 # DOSBox Staging's optional FluidSynth fallback tries to download a source
 # archive from inside Flatpak's network-isolated build sandbox.
 dosbox_module = "  - name: dosbox-staging\n    buildsystem: meson\n"
@@ -40,7 +84,7 @@ if updated.count(dosbox_module) != 1:
 updated = updated.replace(
     dosbox_module,
     "  - name: dosbox-staging\n    buildsystem: meson\n"
-    "    config-opts:\n      - -Duse_fluidsynth=false\n      - -Duse_slirp=false\n",
+    "    config-opts:\n      - -Duse_fluidsynth=false\n      - -Duse_slirp=false\n      - --wrap-mode=nofallback\n",
     1,
 )
 
