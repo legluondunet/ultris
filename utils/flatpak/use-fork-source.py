@@ -76,11 +76,23 @@ updated = updated.replace(
 # The 0.83.0 archive lists a removed misc directory instead of its internal shaders.
 dosbox_hash = "        sha256: 9b36be5a666784adaeffa560bd0950691f851a76bdb97e7ae3c989561e91caf3\n"
 shader_command = """sed -i "s/'misc'/'_internal'/" resources/shaders/meson.build"""
+# Repair DOSBox 0.83.0's incomplete Meson integration of its bundled RIFF parser.
+riff_commands = (
+    "sed -i \"/'riffcpp.cpp',/a )\" src/libs/riffcpp/meson.build",
+    "sed -i \"/subdir('src\\/libs\\/residfp')/a subdir('src/libs/riffcpp')\" meson.build",
+    'sed -i "s/        libriffcpp,/        libriffcpp_dep,/" src/hardware/meson.build',
+    'sed -i "/    libtalchorus_dep,/a     libriffcpp_dep," meson.build',
+)
+riff_yaml = "".join(f"          - {json.dumps(command)}\n" for command in riff_commands)
+
 if updated.count(dosbox_hash) != 1:
     sys.exit("Expected exactly one DOSBox Staging 0.83.0 archive")
 updated = updated.replace(
     dosbox_hash,
-    dosbox_hash + "      - type: shell\n        commands:\n" + f"          - {json.dumps(shader_command)}\n",
+    dosbox_hash
+    + "      - type: shell\n        commands:\n"
+    + f"          - {json.dumps(shader_command)}\n"
+    + riff_yaml,
     1,
 )
 
