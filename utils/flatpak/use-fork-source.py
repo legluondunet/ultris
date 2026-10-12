@@ -156,6 +156,20 @@ updated = updated.replace(
     "        sha256: 3d258a3bf97cc20c59eeebfe62c2432fae88adda74d3ad098681c76e0ebf446b\n",
     1,
 )
+# Supply FluidSynth's pinned GCEM headers before entering the offline build sandbox.
+fluid_hash = "        sha256: 3d258a3bf97cc20c59eeebfe62c2432fae88adda74d3ad098681c76e0ebf446b\n"
+if updated.count(fluid_hash) != 1:
+    sys.exit("Expected exactly one FluidSynth 2.6.1 archive")
+updated = updated.replace(
+    fluid_hash,
+    fluid_hash
+    + "      - type: archive\n"
+    + "        url: https://github.com/kthohr/gcem/archive/012ae73c6d0a2cb09ffe86475f5c6fba3926e200.zip\n"
+    + "        sha256: 28159274c54e9640354852e172d10d88eb159f4e7f2fea42edbcd20105ed3526\n"
+    + "        dest: gcem\n",
+    1,
+)
+
 fluid_patch = "      - type: patch\n        path: patches/fluidsynth-cmake-policy.patch\n"
 if updated.count(fluid_patch) != 1:
     sys.exit("Expected exactly one obsolete FluidSynth gentables patch")
