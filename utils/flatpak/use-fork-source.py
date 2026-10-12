@@ -21,6 +21,33 @@ updated, count = re.subn(pattern, r"\g<1>      - type: dir\n        path: lutris
 if count != 1:
     sys.exit(f"Expected exactly one upstream Lutris source entry; found {count}")
 
+# Keep hardware identification and SDL 1.2 compatibility components current.
+source_updates = (
+    (
+        "https://github.com/vcrhonek/hwdata/archive/refs/tags/v0.349.tar.gz",
+        "2591ebf85b36e6d953360a003b2991fc0a0c2c35d3fdbd3133f435098b0af3da",
+        "https://github.com/vcrhonek/hwdata/archive/refs/tags/v0.412.tar.gz",
+        "f0c64cd7e31d70a5fb3a52e53ab50a61e74c0421a6381eaa45114eec3bde5fe7",
+    ),
+    (
+        "https://mirrors.edge.kernel.org/pub/software/utils/pciutils/pciutils-3.7.0.tar.gz",
+        "2432e7a2e12000502d36cf769ab6e5a0cf4931e5050ccaf8b02984b2d3cb0948",
+        "https://github.com/pciutils/pciutils/archive/refs/tags/v3.15.0.tar.gz",
+        "06f467642057599acf396bc17340452fac3308f1e08be19e0c32587e42d7017b",
+    ),
+    (
+        "https://github.com/libsdl-org/sdl12-compat/archive/refs/tags/release-1.2.68.tar.gz",
+        "63c6e4dcc1154299e6f363c872900be7f3dcb3e42b9f8f57e05442ec3d89d02d",
+        "https://github.com/libsdl-org/sdl12-compat/archive/refs/tags/release-1.2.78.tar.gz",
+        "40ec5f0bab13a217ffae7aab0c450f1f798761e91fb185051b5211925c9da11a",
+    ),
+)
+for old_url, old_hash, new_url, new_hash in source_updates:
+    old_source = f"        url: {old_url}\n        sha256: {old_hash}\n"
+    if updated.count(old_source) != 1:
+        sys.exit(f"Expected exactly one pinned source for {old_url}")
+    updated = updated.replace(old_source, f"        url: {new_url}\n        sha256: {new_hash}\n", 1)
+
 # GLU's Meson default installs glu.pc under /app/lib64/pkgconfig,
 # but the subsequent mesa-demos module looks for it under /app/lib/pkgconfig.
 glu_module = "  - name: glu\n    buildsystem: meson\n"
