@@ -17,9 +17,7 @@ pattern = (
     r"        url: https://github.com/lutris/lutris.git\n"
     r"        commit: [0-9a-f]+\n"
 )
-updated, count = re.subn(
-    pattern, r"\g<1>      - type: dir\n        path: lutris-source\n", source
-)
+updated, count = re.subn(pattern, r"\g<1>      - type: dir\n        path: lutris-source\n", source)
 if count != 1:
     sys.exit(f"Expected exactly one upstream Lutris source entry; found {count}")
 
@@ -48,15 +46,17 @@ updated = updated.replace(
 
 # The Flathub shared module installs Ayatana Ido in lib64 by default.
 # Its dependent libayatana-indicator module searches /app/lib instead.
-ayatana_manifest = (
-    manifest.parent / "shared-modules/libayatana-appindicator/libayatana-appindicator-gtk3.json"
-)
+ayatana_manifest = manifest.parent / "shared-modules/libayatana-appindicator/libayatana-appindicator-gtk3.json"
 ayatana = json.loads(ayatana_manifest.read_text())
 
 
 def fix_ayatana_libraries(value):
     if isinstance(value, dict):
-        if value.get("name") in ("ayatana-ido", "libayatana-ido", "libayatana-indicator"):
+        if value.get("name") in (
+            "ayatana-ido",
+            "libayatana-ido",
+            "libayatana-indicator",
+        ):
             opts = value.setdefault("config-opts", [])
             if "-DCMAKE_INSTALL_LIBDIR=lib" not in opts:
                 opts.append("-DCMAKE_INSTALL_LIBDIR=lib")
@@ -73,4 +73,3 @@ ayatana_manifest.write_text(json.dumps(ayatana, indent=2) + "\n")
 
 manifest.write_text(updated)
 print("Flathub manifest now builds the fork with GLU and Ayatana libraries in /app/lib.")
-

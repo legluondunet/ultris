@@ -52,14 +52,14 @@ jobs:
           python3 lutris-source/utils/flatpak/use-fork-source.py \
             flatpak-packaging/net.lutris.Lutris.yml
 
-      - name: Install Flatpak build dependencies
+      - name: Download Flatpak sources and SDKs
         working-directory: flatpak-packaging
         shell: bash
         run: |
           # Flathub's large dependency graph downloads many upstream archives.
           # Retry transient TLS/network failures; flatpak-builder caches downloads.
           for attempt in 1 2 3 4; do
-            if flatpak-builder --force-clean --user --install-deps-from=flathub --assumeyes --repo=repo build-dir net.lutris.Lutris.yml; then
+            if flatpak-builder --download-only --user --install-deps-from=flathub --assumeyes build-dir net.lutris.Lutris.yml; then
               exit 0
             fi
             if (( attempt == 4 )); then
@@ -69,6 +69,34 @@ jobs:
             echo "Dependency download failed (attempt ${attempt}/4); retrying in 20 seconds..."
             sleep 20
           done
+
+      - name: Build Flatpak
+        working-directory: flatpak-packaging
+        shell: bash
+        run: |
+          # Compile once: compiler errors are not transient download failures.
+          # Keep full diagnostics in an artifact and a concise tail in Actions.
+          if flatpak-builder --force-clean --disable-download --user --assumeyes \
+            --repo=repo build-dir net.lutris.Lutris.yml >flatpak-build.log 2>&1; then
+            tail -n 100 flatpak-build.log
+          else
+            status=$?
+            tail -n 250 flatpak-build.log
+            echo "::error::Flatpak compilation failed (exit ${status}); see flatpak-build.log"
+            exit "$status"
+          fi
+
+      - name: Upload build diagnostics
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: lutris-flatpak-build-diagnostics
+          path: |
+            flatpak-packaging/flatpak-build.log
+            flatpak-packaging/net.lutris.Lutris.yml
+            flatpak-packaging/.flatpak-builder/build/**/meson-logs/meson-log.txt
+          if-no-files-found: warn
+          retention-days: 14
 
       - name: Export standalone Flatpak bundle
         working-directory: flatpak-packaging
