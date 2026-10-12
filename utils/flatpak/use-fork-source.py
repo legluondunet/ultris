@@ -78,6 +78,7 @@ dosbox_hash = "        sha256: 9b36be5a666784adaeffa560bd0950691f851a76bdb97e7ae
 shader_command = """sed -i "s/'misc'/'_internal'/" resources/shaders/meson.build"""
 # Repair DOSBox 0.83.0's incomplete Meson integration of its bundled RIFF parser.
 riff_commands = (
+    "sed -i '/#define DOSBOX_VERSION /a #define DOSBOX_VERSION_SHORT \"0.83\"' src/dosbox_config.h.in",
     "sed -i \"/'riffcpp.cpp',/a )\" src/libs/riffcpp/meson.build",
     "sed -i \"/subdir('src\\/libs\\/residfp')/a subdir('src/libs/riffcpp')\" meson.build",
     'sed -i "s/        libriffcpp,/        libriffcpp_dep,/" src/hardware/meson.build',
