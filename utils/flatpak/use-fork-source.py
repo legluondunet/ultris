@@ -143,15 +143,49 @@ updated = updated.replace(
     1,
 )
 
-# DOSBox Staging's optional FluidSynth fallback tries to download a source
-# archive from inside Flatpak's network-isolated build sandbox.
+# DOSBox 0.83 uses the newer FluidSynth portamento API.
+fluid_source = (
+    "        url: https://github.com/FluidSynth/fluidsynth/archive/v2.3.5.tar.gz\n"
+    "        sha256: f89e8e983ecfb4a5b4f5d8c2b9157ed18d15ed2e36246fa782f18abaea550e0d\n"
+)
+if updated.count(fluid_source) != 1:
+    sys.exit("Expected exactly one FluidSynth 2.3.5 source")
+updated = updated.replace(
+    fluid_source,
+    "        url: https://github.com/FluidSynth/fluidsynth/archive/refs/tags/v2.6.1.tar.gz\n"
+    "        sha256: 3d258a3bf97cc20c59eeebfe62c2432fae88adda74d3ad098681c76e0ebf446b\n",
+    1,
+)
+fluid_patch = "      - type: patch\n        path: patches/fluidsynth-cmake-policy.patch\n"
+if updated.count(fluid_patch) != 1:
+    sys.exit("Expected exactly one obsolete FluidSynth gentables patch")
+updated = updated.replace(fluid_patch, "", 1)
+fluid_module = "  - name: fluidsynth\n    buildsystem: cmake-ninja\n    config-opts:\n"
+if updated.count(fluid_module) != 1:
+    sys.exit("Expected exactly one FluidSynth module")
+updated = updated.replace(
+    fluid_module,
+    "  - name: fluidsynth\n    buildsystem: cmake-ninja\n    builddir: true\n"
+    "    config-opts:\n      - -DCMAKE_INSTALL_LIBDIR=lib\n",
+    1,
+)
+slirp_module = "      - name: libslirp\n        buildsystem: meson\n"
+if updated.count(slirp_module) != 1:
+    sys.exit("Expected exactly one libslirp module")
+updated = updated.replace(
+    slirp_module,
+    slirp_module + "        config-opts:\n          - --libdir=lib\n",
+    1,
+)
+
+# Enable MIDI and Ethernet with manifest-provided dependencies, without network fallbacks.
 dosbox_module = "  - name: dosbox-staging\n    buildsystem: meson\n"
 if updated.count(dosbox_module) != 1:
     sys.exit("Expected exactly one DOSBox Staging module")
 updated = updated.replace(
     dosbox_module,
     "  - name: dosbox-staging\n    buildsystem: meson\n"
-    "    config-opts:\n      - -Duse_fluidsynth=false\n      - -Duse_slirp=false\n      - --wrap-mode=nofallback\n",
+    "    config-opts:\n      - -Duse_fluidsynth=true\n      - -Duse_slirp=true\n      - --wrap-mode=nofallback\n",
     1,
 )
 
