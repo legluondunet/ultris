@@ -46,6 +46,17 @@ updated = updated.replace(
     1,
 )
 
+# The 0.83.0 archive lists a removed misc directory instead of its internal shaders.
+dosbox_hash = "        sha256: 9b36be5a666784adaeffa560bd0950691f851a76bdb97e7ae3c989561e91caf3\n"
+shader_command = """sed -i "s/'misc'/'_internal'/" resources/shaders/meson.build"""
+if updated.count(dosbox_hash) != 1:
+    sys.exit("Expected exactly one DOSBox Staging 0.83.0 archive")
+updated = updated.replace(
+    dosbox_hash,
+    dosbox_hash + "      - type: shell\n        commands:\n" + f"          - {json.dumps(shader_command)}\n",
+    1,
+)
+
 # The 0.79.1 SDL2_net include fix is obsolete: 0.83.0's DOS sources no longer use SDL_net.h.
 dosbox_patch = (
     "      # SDL2_net headers are no longer next to SDL2's, libdos needs the dep for SDL_net.h\n"
