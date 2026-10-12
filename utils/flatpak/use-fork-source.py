@@ -103,6 +103,7 @@ updated = updated.replace(
     "    modules:\n"
     "      - name: SDL2_image\n"
     "        buildsystem: cmake-ninja\n"
+    "        builddir: true\n"
     "        config-opts:\n"
     "          - -DCMAKE_INSTALL_LIBDIR=lib\n"
     "          - -DSDL2IMAGE_VENDORED=OFF\n"
