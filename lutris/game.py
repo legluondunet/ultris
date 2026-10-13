@@ -94,8 +94,6 @@ class Game:
         # Load attributes from database
         game_data = games_db.get_game_by_field(game_id, "id") or {}
 
-        self._config_monitor = None
-        self._config_reload_timeout = 0
         self._config = None
         self._game_config_id = game_data.get("configpath") or ""
 
@@ -346,30 +344,6 @@ class Game:
         so that it will pick up the new configuration."""
         self._config = None
         self._runner = None
-
-    def watch_config_file(self, path: str) -> None:
-        """Watch the directory so atomic replacements by external editors are noticed."""
-        if self._config_monitor:
-            return
-        config_file = Gio.File.new_for_path(path)
-        self._config_monitor = config_file.get_parent().monitor_directory(Gio.FileMonitorFlags.WATCH_MOVES, None)
-
-        def on_changed(_monitor, file, other_file, _event):
-            if not file.equal(config_file) and not (other_file and other_file.equal(config_file)):
-                return
-            if self._config_reload_timeout:
-                GLib.source_remove(self._config_reload_timeout)
-            self._config_reload_timeout = GLib.timeout_add(300, reload_saved_config)
-
-        def reload_saved_config():
-            self._config_reload_timeout = 0
-            # Never replace the runner used by a running game; launch() already
-            # reloads the saved configuration before its next execution.
-            if self.state == self.STATE_STOPPED:
-                self.reload_config()
-            return GLib.SOURCE_REMOVE
-
-        self._config_monitor.connect("changed", on_changed)
 
     @property
     def runner_name(self) -> str:

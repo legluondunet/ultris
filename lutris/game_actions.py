@@ -375,7 +375,6 @@ class SingleGameActions(GameActions):
         """Open the game's configuration in the user's default application."""
         config = self.game.config
         if config and config.game_config_path:
-            self.game.watch_config_file(config.game_config_path)
             open_config_file(config.game_config_path)
 
     def on_browse_files(self, _widget: Gtk.Widget) -> None:
