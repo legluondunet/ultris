@@ -44,3 +44,14 @@ class TestSevenZipProgress(TestCase):
         ):
             extract._extract_7zip("bad.iso", "target", progress_callback=progress.append)
         self.assertNotIn(100, progress)
+
+    def test_terminal_progress_uses_one_dynamic_line(self):
+        terminal = io.StringIO()
+        terminal.isatty = lambda: True
+        with patch.object(extract.sys, "stdout", terminal):
+            progress, _ = self.run_extraction(b" 25%\r 75%\r100%")
+        output = terminal.getvalue()
+        self.assertEqual(output.count("\n"), 1)
+        self.assertIn("\rExtracting archive with spaces.zip:", output)
+        self.assertIn("100%", output)
+        self.assertEqual(progress[-1], 100)

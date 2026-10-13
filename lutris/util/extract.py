@@ -5,6 +5,7 @@ import re
 import shutil
 import signal
 import subprocess
+import sys
 import tarfile
 import uuid
 import zipfile
@@ -220,49 +221,60 @@ def _extract_7zip(path: str, dest: str, archive_type: str | None = None, progres
         command.append(f"-t{archive_type}")
 
     last_percent = -1
+    last_logged_percent = -10
+    terminal = sys.stdout if sys.stdout and sys.stdout.isatty() else None
 
     def report(percent):
-        nonlocal last_percent
+        nonlocal last_percent, last_logged_percent
         if percent != last_percent:
             last_percent = percent
-            logger.info("Extracting %s: %d%%", os.path.basename(path), percent)
+            if terminal:
+                name = os.path.basename(path).replace("\n", " ").replace("\r", " ")
+                print(f"\rExtracting {name}: {percent:3d}%", end="", file=terminal, flush=True)
+            elif percent in (0, 100) or percent >= last_logged_percent + 10:
+                logger.info("Extracting %s: %d%%", os.path.basename(path), percent)
+                last_logged_percent = percent
             if progress_callback:
                 progress_callback(percent)
 
-    report(0)
-    # Progress is rewritten with carriage returns/backspaces instead of newlines.
-    # Read incrementally so pipe buffering cannot defer updates until process exit.
-    with subprocess.Popen(command, stdout=subprocess.PIPE) as process:
-        assert process.stdout is not None  # PIPE always supplies a readable stream.
-        previous_handler = None
-        if multiprocessing.current_process().name != "MainProcess":
+    try:
+        report(0)
+        # Progress is rewritten with carriage returns/backspaces instead of newlines.
+        # Read incrementally so pipe buffering cannot defer updates until process exit.
+        with subprocess.Popen(command, stdout=subprocess.PIPE) as process:
+            assert process.stdout is not None  # PIPE always supplies a readable stream.
+            previous_handler = None
+            if multiprocessing.current_process().name != "MainProcess":
 
-            def terminate_extractor(_signum, _frame):
-                process.kill()
-                raise SystemExit()
+                def terminate_extractor(_signum, _frame):
+                    process.kill()
+                    raise SystemExit()
 
-            previous_handler = signal.signal(signal.SIGTERM, terminate_extractor)
-        frame = bytearray()
-        try:
-            while chunk := process.stdout.read(1):
-                if chunk in (b"\r", b"\n", b"\b"):
-                    frame.clear()
-                else:
-                    frame.extend(chunk)
-                    if chunk == b"%":
-                        match = re.match(rb"^\s*(\d{1,3})%$", frame)
-                        if match and int(match[1]) <= 100:
-                            # Completion is only reported after a successful exit.
-                            report(min(int(match[1]), 99))
-                    if len(frame) > 4096:
+                previous_handler = signal.signal(signal.SIGTERM, terminate_extractor)
+            frame = bytearray()
+            try:
+                while chunk := process.stdout.read(1):
+                    if chunk in (b"\r", b"\n", b"\b"):
                         frame.clear()
-        finally:
-            if previous_handler is not None:
-                signal.signal(signal.SIGTERM, previous_handler)
-        return_code = process.wait()
-    if return_code:
-        raise ExtractError(f"7z failed to extract {path} (exit code {return_code})")
-    report(100)
+                    else:
+                        frame.extend(chunk)
+                        if chunk == b"%":
+                            match = re.match(rb"^\s*(\d{1,3})%$", frame)
+                            if match and int(match[1]) <= 100:
+                                # Completion is only reported after a successful exit.
+                                report(min(int(match[1]), 99))
+                        if len(frame) > 4096:
+                            frame.clear()
+            finally:
+                if previous_handler is not None:
+                    signal.signal(signal.SIGTERM, previous_handler)
+            return_code = process.wait()
+        if return_code:
+            raise ExtractError(f"7z failed to extract {path} (exit code {return_code})")
+        report(100)
+    finally:
+        if terminal:
+            print(file=terminal, flush=True)
 
 
 def _get_7zip_path() -> str:
