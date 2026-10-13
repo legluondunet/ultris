@@ -21,6 +21,8 @@ permissions:
 jobs:
   flatpak:
     name: Flatpak (x86_64)
+    # This feature is currently tested with native builds and AppImage only.
+    if: github.event_name != 'pull_request' || github.head_ref != 'feature/show-build-commit'
     runs-on: ubuntu-24.04
     timeout-minutes: 300
     steps:
@@ -49,6 +51,8 @@ jobs:
           mkdir -p flatpak-packaging/lutris-source
           rsync -a --exclude=.git --exclude=dist/ --exclude=.github/ \
             lutris-source/ flatpak-packaging/lutris-source/
+          # Stamp before the source tree is passed to the offline builder.
+          python3 lutris-source/utils/get-build-commit.py > flatpak-packaging/lutris-source/lutris/build_commit.txt
           python3 lutris-source/utils/flatpak/use-fork-source.py \
             flatpak-packaging/net.lutris.Lutris.yml
 
@@ -112,3 +116,5 @@ jobs:
           path: flatpak-packaging/Lutris-x86_64.flatpak
           if-no-files-found: error
           retention-days: 14
+
+
