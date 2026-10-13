@@ -233,6 +233,7 @@ def _extract_7zip(path: str, dest: str, archive_type: str | None = None, progres
     # Progress is rewritten with carriage returns/backspaces instead of newlines.
     # Read incrementally so pipe buffering cannot defer updates until process exit.
     with subprocess.Popen(command, stdout=subprocess.PIPE) as process:
+        assert process.stdout is not None  # PIPE always supplies a readable stream.
         previous_handler = None
         if multiprocessing.current_process().name != "MainProcess":
 
