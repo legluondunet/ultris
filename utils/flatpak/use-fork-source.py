@@ -259,6 +259,36 @@ updated = updated.replace(html_original, html_updated, 1)
 
 # GLU's Meson default installs glu.pc under /app/lib64/pkgconfig,
 # but the subsequent mesa-demos module looks for it under /app/lib/pkgconfig.
+
+# Update Python runtime dependencies without changing their offline build methods.
+python_source_updates = (
+    (
+        "https://files.pythonhosted.org/packages/54/ed/79a089b6be93607fa5cdaedf301d7dfb23af5f25c398d5ead2525b063e17/pyyaml-6.0.2.tar.gz",
+        "d584d9ec91ad65861cc08d42e834324ef890a082e591037abe114850ff7bbc3e",
+        "https://files.pythonhosted.org/packages/05/8e/961c0007c59b8dd7729d542c61a4d537767a59645b82a0b521206e1e25c2/pyyaml-6.0.3.tar.gz",
+        "d76623373421df22fb4cf8817020cbb7ef15c725b9d5e45f17e189bfc384190f",
+    ),
+    (
+        "https://files.pythonhosted.org/packages/b5/47/ac709629ddb9779fee29b7d10ae9580f60a4b37e49bce72360ddf9a79cdc/setproctitle-1.3.2.tar.gz",
+        "b9fb97907c830d260fa0658ed58afd48a86b2b88aac521135c352ff7fd3477fd",
+        "https://files.pythonhosted.org/packages/49/b0/6b8a516c5a9e9630bd5293db78314ac012f690305fe93beadea388626efb/setproctitle-1.3.8.tar.gz",
+        "cafe209d064a6efb88cb45a03e97981ff8832802b2b5d009dde0197a3b7b41c8",
+    ),
+    (
+        "https://files.pythonhosted.org/packages/b5/7e/ddfbd640ac9a82e60718558a3de7d5988a7d4648385cf00318f60a8b073a/distro-1.7.0.tar.gz",
+        "151aeccf60c216402932b52e40ee477a939f8d58898927378a02abbe852c1c39",
+        "https://files.pythonhosted.org/packages/fc/f8/98eea607f65de6527f8a2e8885fc8015d3e6f5775df186e443e0964a11c3/distro-1.9.0.tar.gz",
+        "2fa77c6fd8940f116ee1d6b94a2f90b13b5ea8d019b98bc8bafdcabcdd9bdbed",
+    ),
+)
+for old_url, old_hash, new_url, new_hash in python_source_updates:
+    pinned_source = rf"url: {re.escape(old_url)}\n(?P<indent> +)sha256: {old_hash}\n"
+    replacement = f"url: {new_url}\n" + rf"\g<indent>sha256: {new_hash}" + "\n"
+    updated, count = re.subn(pinned_source, replacement, updated)
+    if count != 1:
+        sys.exit(f"Expected exactly one pinned Python source for {old_url}; found {count}")
+
+
 glu_module = "  - name: glu\n    buildsystem: meson\n"
 if updated.count(glu_module) != 1:
     sys.exit("Expected exactly one native GLU module")
