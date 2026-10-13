@@ -28,6 +28,7 @@ from lutris.services import SERVICES
 from lutris.services.base import BaseService
 from lutris.services.lutris import download_lutris_media
 from lutris.util import xdgshortcuts
+from lutris.util.config_editor import open_config_file
 from lutris.util.jobs import AsyncCall
 from lutris.util.log import logger
 from lutris.util.standalone_scripts import generate_script
@@ -262,6 +263,7 @@ class SingleGameActions(GameActions):
             ("show_logs", _("Show logs"), self.on_show_logs),
             (None, "-", None),
             ("configure", _("Configure"), self.on_edit_game_configuration),
+            ("edit-yaml", _("Edit YAML file"), self.on_edit_game_yaml),
             ("category", _("Categories"), self.on_edit_game_categories),
             ("browse", _("Browse files"), self.on_browse_files),
             ("favorite", _("Add to favorites"), self.on_add_favorite_game),
@@ -313,6 +315,7 @@ class SingleGameActions(GameActions):
             "install_dlcs": game.is_updatable,
             "stop": self.is_game_running,
             "configure": bool(game.is_installed),
+            "edit-yaml": bool(game.is_installed),
             "browse": game.is_installed and game.runner_name != "browser",
             "show_logs": game.is_installed,
             "category": True,
@@ -367,6 +370,13 @@ class SingleGameActions(GameActions):
     def on_edit_game_configuration(self, _widget: Gtk.Widget) -> None:
         """Edit game preferences"""
         self.application.show_window(EditGameConfigDialog, game=self.game, parent=self.window)
+
+    def on_edit_game_yaml(self, _widget: Gtk.Widget) -> None:
+        """Open the game's configuration in the user's default application."""
+        config = self.game.config
+        if config and config.game_config_path:
+            self.game.watch_config_file(config.game_config_path)
+            open_config_file(config.game_config_path)
 
     def on_browse_files(self, _widget: Gtk.Widget) -> None:
         """Callback to open a game folder in the file browser"""
