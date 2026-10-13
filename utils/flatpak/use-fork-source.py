@@ -48,6 +48,68 @@ for old_url, old_hash, new_url, new_hash in source_updates:
         sys.exit(f"Expected exactly one pinned source for {old_url}")
     updated = updated.replace(old_source, f"        url: {new_url}\n        sha256: {new_hash}\n", 1)
 
+
+# Update USB tools and BSD compatibility libraries from pinned release archives.
+component_updates = (
+    (
+        "https://mirrors.edge.kernel.org/pub/linux/utils/usb/usbutils/usbutils-013.tar.xz",
+        "9e23494fcc78b7a80ee29a07dd179c95ae2f71509c35728dbbabc2d1cca41338",
+        "https://www.kernel.org/pub/linux/utils/usb/usbutils/usbutils-019.tar.xz",
+        "659f40c440e31ba865c52c818a33d3ba6a97349e3353f8b1985179cb2aa71ec5",
+    ),
+    (
+        "https://libbsd.freedesktop.org/releases/libbsd-0.10.0.tar.xz",
+        "34b8adc726883d0e85b3118fa13605e179a62b31ba51f676136ecb2d0bc1a887",
+        "https://libbsd.freedesktop.org/releases/libbsd-0.12.2.tar.xz",
+        "b88cc9163d0c652aaf39a99991d974ddba1c3a9711db8f1b5838af2a14731014",
+    ),
+)
+for old_url, old_hash, new_url, new_hash in component_updates:
+    old_source = f"        url: {old_url}\n        sha256: {old_hash}\n"
+    if updated.count(old_source) != 1:
+        sys.exit(f"Expected exactly one pinned source for {old_url}")
+    updated = updated.replace(old_source, f"        url: {new_url}\n        sha256: {new_hash}\n", 1)
+
+usb_options = (
+    "  - name: usbutils\n"
+    "    config-opts:\n"
+    "      - --datadir=/app/share/hwdata\n"
+    "      - --sbindir=/app/bin\n"
+)
+if updated.count(usb_options) != 1:
+    sys.exit("Expected exactly one usbutils module")
+updated = updated.replace(
+    usb_options,
+    "  - name: usbutils\n"
+    "    buildsystem: meson\n"
+    "    config-opts:\n"
+    "      - --datadir=/app/share/hwdata\n"
+    "      - --sbindir=/app/bin\n",
+    1,
+)
+
+# libbsd now needs libmd; provide it for both native and Wine compatibility ABI.
+bsd_module = "  - name: libbsd\n"
+if updated.count(bsd_module) != 1:
+    sys.exit("Expected exactly one native libbsd module")
+updated = updated.replace(
+    bsd_module,
+    "  - name: libmd\n"
+    "    sources: &libmd_sources\n"
+    "      - type: archive\n"
+    "        url: https://libbsd.freedesktop.org/releases/libmd-1.1.0.tar.xz\n"
+    "        sha256: 1bd6aa42275313af3141c7cf2e5b964e8b1fd488025caf2f971f43b00776b332\n"
+    "\n"
+    "  - name: libmd-32bit\n"
+    "    build-options:\n"
+    "      arch:\n"
+    "        x86_64: *compat_i386_opts\n"
+    "    sources: *libmd_sources\n"
+    "\n"
+    + bsd_module,
+    1,
+)
+
 # GLU's Meson default installs glu.pc under /app/lib64/pkgconfig,
 # but the subsequent mesa-demos module looks for it under /app/lib/pkgconfig.
 glu_module = "  - name: glu\n    buildsystem: meson\n"
