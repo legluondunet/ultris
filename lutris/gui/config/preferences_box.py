@@ -18,6 +18,13 @@ def _is_system_dark_by_default():
 class InterfacePreferencesBox(BaseConfigBox):
     settings_options = [
         {
+            "option": "show_edit_yaml",
+            "label": _("Show “Edit YAML file” in the game context menu"),
+            "type": "bool",
+            "default": True,
+            "help": _("Open the game configuration in your default editor from the right-click menu."),
+        },
+        {
             "option": "hide_client_on_game_start",
             "label": _("Minimize client when a game is launched"),
             "type": "bool",

@@ -10,6 +10,7 @@ from typing import TYPE_CHECKING, Any
 
 from gi.repository import Gio, Gtk
 
+from lutris import settings
 from lutris.config import duplicate_game_config
 from lutris.database import games
 from lutris.database.games import add_game, get_game_by_field
@@ -315,7 +316,7 @@ class SingleGameActions(GameActions):
             "install_dlcs": game.is_updatable,
             "stop": self.is_game_running,
             "configure": bool(game.is_installed),
-            "edit-yaml": bool(game.is_installed),
+            "edit-yaml": bool(game.is_installed) and settings.read_bool_setting("show_edit_yaml", default=True),
             "browse": game.is_installed and game.runner_name != "browser",
             "show_logs": game.is_installed,
             "category": True,
@@ -373,6 +374,8 @@ class SingleGameActions(GameActions):
 
     def on_edit_game_yaml(self, _widget: Gtk.Widget) -> None:
         """Open the game's configuration in the user's default application."""
+        if not settings.read_bool_setting("show_edit_yaml", default=True):
+            return
         config = self.game.config
         if config and config.game_config_path:
             open_config_file(config.game_config_path)
