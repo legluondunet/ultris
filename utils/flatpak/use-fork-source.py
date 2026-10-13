@@ -17,7 +17,9 @@ pattern = (
     r"        url: https://github.com/lutris/lutris.git\n"
     r"        commit: [0-9a-f]+\n"
 )
-updated, count = re.subn(pattern, r"\g<1>      - type: dir\n        path: lutris-source\n", source)
+updated, count = re.subn(
+    pattern, r"\g<1>      - type: dir\n        path: lutris-source\n", source
+)
 if count != 1:
     sys.exit(f"Expected exactly one upstream Lutris source entry; found {count}")
 
@@ -46,7 +48,9 @@ for old_url, old_hash, new_url, new_hash in source_updates:
     old_source = f"        url: {old_url}\n        sha256: {old_hash}\n"
     if updated.count(old_source) != 1:
         sys.exit(f"Expected exactly one pinned source for {old_url}")
-    updated = updated.replace(old_source, f"        url: {new_url}\n        sha256: {new_hash}\n", 1)
+    updated = updated.replace(
+        old_source, f"        url: {new_url}\n        sha256: {new_hash}\n", 1
+    )
 
 
 # Update USB tools and BSD compatibility libraries from pinned release archives.
@@ -68,7 +72,9 @@ for old_url, old_hash, new_url, new_hash in component_updates:
     old_source = f"        url: {old_url}\n        sha256: {old_hash}\n"
     if updated.count(old_source) != 1:
         sys.exit(f"Expected exactly one pinned source for {old_url}")
-    updated = updated.replace(old_source, f"        url: {new_url}\n        sha256: {new_hash}\n", 1)
+    updated = updated.replace(
+        old_source, f"        url: {new_url}\n        sha256: {new_hash}\n", 1
+    )
 
 usb_options = "  - name: usbutils\n    config-opts:\n      - --datadir=/app/share/hwdata\n      - --sbindir=/app/bin\n"
 if updated.count(usb_options) != 1:
@@ -259,6 +265,38 @@ updated = updated.replace(html_original, html_updated, 1)
 
 # GLU's Meson default installs glu.pc under /app/lib64/pkgconfig,
 # but the subsequent mesa-demos module looks for it under /app/lib/pkgconfig.
+
+# Update Python runtime dependencies without changing their offline build methods.
+python_source_updates = (
+    (
+        "https://files.pythonhosted.org/packages/54/ed/79a089b6be93607fa5cdaedf301d7dfb23af5f25c398d5ead2525b063e17/pyyaml-6.0.2.tar.gz",
+        "d584d9ec91ad65861cc08d42e834324ef890a082e591037abe114850ff7bbc3e",
+        "https://files.pythonhosted.org/packages/05/8e/961c0007c59b8dd7729d542c61a4d537767a59645b82a0b521206e1e25c2/pyyaml-6.0.3.tar.gz",
+        "d76623373421df22fb4cf8817020cbb7ef15c725b9d5e45f17e189bfc384190f",
+    ),
+    (
+        "https://files.pythonhosted.org/packages/b5/47/ac709629ddb9779fee29b7d10ae9580f60a4b37e49bce72360ddf9a79cdc/setproctitle-1.3.2.tar.gz",
+        "b9fb97907c830d260fa0658ed58afd48a86b2b88aac521135c352ff7fd3477fd",
+        "https://files.pythonhosted.org/packages/49/b0/6b8a516c5a9e9630bd5293db78314ac012f690305fe93beadea388626efb/setproctitle-1.3.8.tar.gz",
+        "cafe209d064a6efb88cb45a03e97981ff8832802b2b5d009dde0197a3b7b41c8",
+    ),
+    (
+        "https://files.pythonhosted.org/packages/b5/7e/ddfbd640ac9a82e60718558a3de7d5988a7d4648385cf00318f60a8b073a/distro-1.7.0.tar.gz",
+        "151aeccf60c216402932b52e40ee477a939f8d58898927378a02abbe852c1c39",
+        "https://files.pythonhosted.org/packages/fc/f8/98eea607f65de6527f8a2e8885fc8015d3e6f5775df186e443e0964a11c3/distro-1.9.0.tar.gz",
+        "2fa77c6fd8940f116ee1d6b94a2f90b13b5ea8d019b98bc8bafdcabcdd9bdbed",
+    ),
+)
+for old_url, old_hash, new_url, new_hash in python_source_updates:
+    pinned_source = rf"url: {re.escape(old_url)}\n(?P<indent> +)sha256: {old_hash}\n"
+    replacement = f"url: {new_url}\n" + rf"\g<indent>sha256: {new_hash}" + "\n"
+    updated, count = re.subn(pinned_source, replacement, updated)
+    if count != 1:
+        sys.exit(
+            f"Expected exactly one pinned Python source for {old_url}; found {count}"
+        )
+
+
 glu_module = "  - name: glu\n    buildsystem: meson\n"
 if updated.count(glu_module) != 1:
     sys.exit("Expected exactly one native GLU module")
@@ -283,7 +321,9 @@ updated = updated.replace(
 )
 
 # The 0.83.0 archive lists a removed misc directory instead of its internal shaders.
-dosbox_hash = "        sha256: 9b36be5a666784adaeffa560bd0950691f851a76bdb97e7ae3c989561e91caf3\n"
+dosbox_hash = (
+    "        sha256: 9b36be5a666784adaeffa560bd0950691f851a76bdb97e7ae3c989561e91caf3\n"
+)
 shader_command = """sed -i "s/'misc'/'_internal'/" resources/shaders/meson.build"""
 # Repair DOSBox 0.83.0's incomplete Meson integration of its bundled RIFF parser.
 riff_commands = (
@@ -318,7 +358,9 @@ if updated.count(dosbox_patch) != 1:
 updated = updated.replace(dosbox_patch, "", 1)
 
 # DOSBox 0.83 requires standalone Asio headers. Download them outside the sandbox.
-dosbox_dependencies = "    modules:\n      # SDL2_net was dropped from the 26.08 runtime\n"
+dosbox_dependencies = (
+    "    modules:\n      # SDL2_net was dropped from the 26.08 runtime\n"
+)
 if updated.count(dosbox_dependencies) != 1:
     sys.exit("Expected exactly one DOSBox dependency list")
 updated = updated.replace(
@@ -368,7 +410,9 @@ updated = updated.replace(
     1,
 )
 # Supply FluidSynth's pinned GCEM headers before entering the offline build sandbox.
-fluid_hash = "        sha256: 3d258a3bf97cc20c59eeebfe62c2432fae88adda74d3ad098681c76e0ebf446b\n"
+fluid_hash = (
+    "        sha256: 3d258a3bf97cc20c59eeebfe62c2432fae88adda74d3ad098681c76e0ebf446b\n"
+)
 if updated.count(fluid_hash) != 1:
     sys.exit("Expected exactly one FluidSynth 2.6.1 archive")
 updated = updated.replace(
@@ -381,7 +425,9 @@ updated = updated.replace(
     1,
 )
 
-fluid_patch = "      - type: patch\n        path: patches/fluidsynth-cmake-policy.patch\n"
+fluid_patch = (
+    "      - type: patch\n        path: patches/fluidsynth-cmake-policy.patch\n"
+)
 if updated.count(fluid_patch) != 1:
     sys.exit("Expected exactly one obsolete FluidSynth gentables patch")
 updated = updated.replace(fluid_patch, "", 1)
@@ -416,7 +462,9 @@ updated = updated.replace(
 
 # Munt otherwise installs mt32emu.pc under /app/lib64/pkgconfig, which
 # DOSBox Staging does not search before trying its network-only fallback.
-munt_module = "      - name: munt\n        buildsystem: cmake-ninja\n        config-opts:\n"
+munt_module = (
+    "      - name: munt\n        buildsystem: cmake-ninja\n        config-opts:\n"
+)
 if updated.count(munt_module) != 1:
     sys.exit("Expected exactly one Munt module")
 updated = updated.replace(
@@ -427,7 +475,10 @@ updated = updated.replace(
 
 # The Flathub shared module installs Ayatana Ido in lib64 by default.
 # Its dependent libayatana-indicator module searches /app/lib instead.
-ayatana_manifest = manifest.parent / "shared-modules/libayatana-appindicator/libayatana-appindicator-gtk3.json"
+ayatana_manifest = (
+    manifest.parent
+    / "shared-modules/libayatana-appindicator/libayatana-appindicator-gtk3.json"
+)
 ayatana = json.loads(ayatana_manifest.read_text())
 
 
@@ -453,4 +504,6 @@ if fix_ayatana_libraries(ayatana) != 2:
 ayatana_manifest.write_text(json.dumps(ayatana, indent=2) + "\n")
 
 manifest.write_text(updated)
-print("Flathub manifest now builds the fork with GLU and Ayatana libraries in /app/lib.")
+print(
+    "Flathub manifest now builds the fork with GLU and Ayatana libraries in /app/lib."
+)
