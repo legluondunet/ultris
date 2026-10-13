@@ -207,6 +207,56 @@ if updated.count(old_module) != 1:
     sys.exit("Expected exactly one original mesa-demos module block")
 updated = updated.replace(old_module, new_module, 1)
 
+
+# Update HTML parsing libraries together, retaining Python 3.10 support.
+html_original = (
+    "      - name: soupsieve\n"
+    "        buildsystem: simple\n"
+    "        build-commands:\n"
+    '          - pip3 install --no-index --no-build-isolation --prefix="${FLATPAK_DEST}"\n'
+    '            --find-links="file://${PWD}" soupsieve\n'
+    "        sources:\n"
+    "          - type: file\n"
+    "            url: https://files.pythonhosted.org/packages/49/37/673d6490efc51ec46d198c75903d99de"
+    "59baffdd47aea3d071b80a9e4e89/soupsieve-2.4.1-py3-none-any.whl\n"
+    "            sha256: 1c1bfee6819544a3447586c889157365a27e10d88cde3ad3da0cf0ddf646feb8\n"
+    "      - name: beautifulsoup4\n"
+    "        buildsystem: simple\n"
+    "        build-commands:\n"
+    '          - pip3 install --no-index --no-build-isolation --prefix="${FLATPAK_DEST}"\n'
+    '            --find-links="file://${PWD}" beautifulsoup4\n'
+    "        sources:\n"
+    "          - type: file\n"
+    "            url: https://files.pythonhosted.org/packages/21/0a/47fdf541c97fd9b6a610cb5fd5181753"
+    "08a7cc60569962e776ac52420387/beautifulsoup4-4.6.3-py3-none-any.whl\n"
+    "            sha256: 194ec62a25438adcb3fdb06378b26559eda1ea8a747367d34c33cef9c7f48d57\n"
+)
+html_updated = (
+    "      - name: soupsieve\n"
+    "        buildsystem: simple\n"
+    "        build-commands:\n"
+    '          - pip3 install --no-index --no-build-isolation --prefix="${FLATPAK_DEST}"\n'
+    '            --find-links="file://${PWD}" soupsieve\n'
+    "        sources:\n"
+    "          - type: file\n"
+    "            url: https://files.pythonhosted.org/packages/66/87/5ed59e1d0290564e2027ed066c52b059"
+    "892c4637741337fc0967183c8d4d/soupsieve-2.10-py3-none-any.whl\n"
+    "            sha256: 8596eb8967d744174820280fa62b4542a2e955bfaccca73ed8a13c6eb8e9b502\n"
+    "      - name: beautifulsoup4\n"
+    "        buildsystem: simple\n"
+    "        build-commands:\n"
+    '          - pip3 install --no-index --no-build-isolation --prefix="${FLATPAK_DEST}"\n'
+    '            --find-links="file://${PWD}" beautifulsoup4\n'
+    "        sources:\n"
+    "          - type: file\n"
+    "            url: https://files.pythonhosted.org/packages/88/c6/92fcd42f1ba33e1184263f25bfabf3d2"
+    "7c383410470f169e4b8163bf9c17/beautifulsoup4-4.15.0-py3-none-any.whl\n"
+    "            sha256: d6f88de62e1d4e38ecb1077eb9724cd0eff29d2a08ca16a401e9b9e93f117cf9\n"
+)
+if updated.count(html_original) != 1:
+    sys.exit("Expected exactly one original HTML parsing module block")
+updated = updated.replace(html_original, html_updated, 1)
+
 # GLU's Meson default installs glu.pc under /app/lib64/pkgconfig,
 # but the subsequent mesa-demos module looks for it under /app/lib/pkgconfig.
 glu_module = "  - name: glu\n    buildsystem: meson\n"
