@@ -17,9 +17,7 @@ pattern = (
     r"        url: https://github.com/lutris/lutris.git\n"
     r"        commit: [0-9a-f]+\n"
 )
-updated, count = re.subn(
-    pattern, r"\g<1>      - type: dir\n        path: lutris-source\n", source
-)
+updated, count = re.subn(pattern, r"\g<1>      - type: dir\n        path: lutris-source\n", source)
 if count != 1:
     sys.exit(f"Expected exactly one upstream Lutris source entry; found {count}")
 
@@ -48,9 +46,7 @@ for old_url, old_hash, new_url, new_hash in source_updates:
     old_source = f"        url: {old_url}\n        sha256: {old_hash}\n"
     if updated.count(old_source) != 1:
         sys.exit(f"Expected exactly one pinned source for {old_url}")
-    updated = updated.replace(
-        old_source, f"        url: {new_url}\n        sha256: {new_hash}\n", 1
-    )
+    updated = updated.replace(old_source, f"        url: {new_url}\n        sha256: {new_hash}\n", 1)
 
 
 # Update USB tools and BSD compatibility libraries from pinned release archives.
@@ -72,9 +68,7 @@ for old_url, old_hash, new_url, new_hash in component_updates:
     old_source = f"        url: {old_url}\n        sha256: {old_hash}\n"
     if updated.count(old_source) != 1:
         sys.exit(f"Expected exactly one pinned source for {old_url}")
-    updated = updated.replace(
-        old_source, f"        url: {new_url}\n        sha256: {new_hash}\n", 1
-    )
+    updated = updated.replace(old_source, f"        url: {new_url}\n        sha256: {new_hash}\n", 1)
 
 usb_options = "  - name: usbutils\n    config-opts:\n      - --datadir=/app/share/hwdata\n      - --sbindir=/app/bin\n"
 if updated.count(usb_options) != 1:
@@ -292,9 +286,7 @@ for old_url, old_hash, new_url, new_hash in python_source_updates:
     replacement = f"url: {new_url}\n" + rf"\g<indent>sha256: {new_hash}" + "\n"
     updated, count = re.subn(pinned_source, replacement, updated)
     if count != 1:
-        sys.exit(
-            f"Expected exactly one pinned Python source for {old_url}; found {count}"
-        )
+        sys.exit(f"Expected exactly one pinned Python source for {old_url}; found {count}")
 
 
 glu_module = "  - name: glu\n    buildsystem: meson\n"
@@ -321,9 +313,7 @@ updated = updated.replace(
 )
 
 # The 0.83.0 archive lists a removed misc directory instead of its internal shaders.
-dosbox_hash = (
-    "        sha256: 9b36be5a666784adaeffa560bd0950691f851a76bdb97e7ae3c989561e91caf3\n"
-)
+dosbox_hash = "        sha256: 9b36be5a666784adaeffa560bd0950691f851a76bdb97e7ae3c989561e91caf3\n"
 shader_command = """sed -i "s/'misc'/'_internal'/" resources/shaders/meson.build"""
 # Repair DOSBox 0.83.0's incomplete Meson integration of its bundled RIFF parser.
 riff_commands = (
@@ -358,9 +348,7 @@ if updated.count(dosbox_patch) != 1:
 updated = updated.replace(dosbox_patch, "", 1)
 
 # DOSBox 0.83 requires standalone Asio headers. Download them outside the sandbox.
-dosbox_dependencies = (
-    "    modules:\n      # SDL2_net was dropped from the 26.08 runtime\n"
-)
+dosbox_dependencies = "    modules:\n      # SDL2_net was dropped from the 26.08 runtime\n"
 if updated.count(dosbox_dependencies) != 1:
     sys.exit("Expected exactly one DOSBox dependency list")
 updated = updated.replace(
@@ -410,9 +398,7 @@ updated = updated.replace(
     1,
 )
 # Supply FluidSynth's pinned GCEM headers before entering the offline build sandbox.
-fluid_hash = (
-    "        sha256: 3d258a3bf97cc20c59eeebfe62c2432fae88adda74d3ad098681c76e0ebf446b\n"
-)
+fluid_hash = "        sha256: 3d258a3bf97cc20c59eeebfe62c2432fae88adda74d3ad098681c76e0ebf446b\n"
 if updated.count(fluid_hash) != 1:
     sys.exit("Expected exactly one FluidSynth 2.6.1 archive")
 updated = updated.replace(
@@ -425,9 +411,7 @@ updated = updated.replace(
     1,
 )
 
-fluid_patch = (
-    "      - type: patch\n        path: patches/fluidsynth-cmake-policy.patch\n"
-)
+fluid_patch = "      - type: patch\n        path: patches/fluidsynth-cmake-policy.patch\n"
 if updated.count(fluid_patch) != 1:
     sys.exit("Expected exactly one obsolete FluidSynth gentables patch")
 updated = updated.replace(fluid_patch, "", 1)
@@ -462,9 +446,7 @@ updated = updated.replace(
 
 # Munt otherwise installs mt32emu.pc under /app/lib64/pkgconfig, which
 # DOSBox Staging does not search before trying its network-only fallback.
-munt_module = (
-    "      - name: munt\n        buildsystem: cmake-ninja\n        config-opts:\n"
-)
+munt_module = "      - name: munt\n        buildsystem: cmake-ninja\n        config-opts:\n"
 if updated.count(munt_module) != 1:
     sys.exit("Expected exactly one Munt module")
 updated = updated.replace(
@@ -475,10 +457,7 @@ updated = updated.replace(
 
 # The Flathub shared module installs Ayatana Ido in lib64 by default.
 # Its dependent libayatana-indicator module searches /app/lib instead.
-ayatana_manifest = (
-    manifest.parent
-    / "shared-modules/libayatana-appindicator/libayatana-appindicator-gtk3.json"
-)
+ayatana_manifest = manifest.parent / "shared-modules/libayatana-appindicator/libayatana-appindicator-gtk3.json"
 ayatana = json.loads(ayatana_manifest.read_text())
 
 
@@ -504,6 +483,4 @@ if fix_ayatana_libraries(ayatana) != 2:
 ayatana_manifest.write_text(json.dumps(ayatana, indent=2) + "\n")
 
 manifest.write_text(updated)
-print(
-    "Flathub manifest now builds the fork with GLU and Ayatana libraries in /app/lib."
-)
+print("Flathub manifest now builds the fork with GLU and Ayatana libraries in /app/lib.")
