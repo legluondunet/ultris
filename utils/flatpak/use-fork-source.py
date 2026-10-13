@@ -70,12 +70,7 @@ for old_url, old_hash, new_url, new_hash in component_updates:
         sys.exit(f"Expected exactly one pinned source for {old_url}")
     updated = updated.replace(old_source, f"        url: {new_url}\n        sha256: {new_hash}\n", 1)
 
-usb_options = (
-    "  - name: usbutils\n"
-    "    config-opts:\n"
-    "      - --datadir=/app/share/hwdata\n"
-    "      - --sbindir=/app/bin\n"
-)
+usb_options = "  - name: usbutils\n    config-opts:\n      - --datadir=/app/share/hwdata\n      - --sbindir=/app/bin\n"
 if updated.count(usb_options) != 1:
     sys.exit("Expected exactly one usbutils module")
 updated = updated.replace(
@@ -105,8 +100,7 @@ updated = updated.replace(
     "      arch:\n"
     "        x86_64: *compat_i386_opts\n"
     "    sources: *libmd_sources\n"
-    "\n"
-    + bsd_module,
+    "\n" + bsd_module,
     1,
 )
 
@@ -410,4 +404,3 @@ ayatana_manifest.write_text(json.dumps(ayatana, indent=2) + "\n")
 
 manifest.write_text(updated)
 print("Flathub manifest now builds the fork with GLU and Ayatana libraries in /app/lib.")
-
