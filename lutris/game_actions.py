@@ -316,7 +316,7 @@ class SingleGameActions(GameActions):
             "install_dlcs": game.is_updatable,
             "stop": self.is_game_running,
             "configure": bool(game.is_installed),
-            "edit-yaml": bool(game.is_installed) and settings.read_bool_setting("show_edit_yaml", default=True),
+            "edit-yaml": bool(game.is_installed) and settings.read_bool_setting("show_edit_yaml", default=False),
             "browse": game.is_installed and game.runner_name != "browser",
             "show_logs": game.is_installed,
             "category": True,
@@ -374,7 +374,7 @@ class SingleGameActions(GameActions):
 
     def on_edit_game_yaml(self, _widget: Gtk.Widget) -> None:
         """Open the game's configuration in the user's default application."""
-        if not settings.read_bool_setting("show_edit_yaml", default=True):
+        if not settings.read_bool_setting("show_edit_yaml", default=False):
             return
         config = self.game.config
         if config and config.game_config_path:
