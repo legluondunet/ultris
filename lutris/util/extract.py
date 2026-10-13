@@ -1,11 +1,15 @@
 import gzip
+import multiprocessing
 import os
+import re
 import shutil
+import signal
 import subprocess
 import tarfile
 import uuid
 import zipfile
 import zlib
+from collections.abc import Callable
 
 from lutris import settings
 from lutris.exceptions import MissingExecutableError
@@ -17,7 +21,13 @@ class ExtractError(Exception):
     """Exception raised when and archive fails to extract"""
 
 
-def extract_archive(path: str, to_directory: str = ".", merge_single: bool = True, extractor=None) -> tuple[str, str]:
+def extract_archive(
+    path: str,
+    to_directory: str = ".",
+    merge_single: bool = True,
+    extractor=None,
+    progress_callback: Callable[[int], None] | None = None,
+) -> tuple[str, str]:
     """Extract an archive to a destination directory.
 
     Args:
@@ -45,7 +55,7 @@ def extract_archive(path: str, to_directory: str = ".", merge_single: bool = Tru
 
     temp_path = temp_dir = os.path.join(to_directory, ".extract-%s" % _random_id())
     try:
-        _do_extract(path, temp_path, opener, mode, extractor)
+        _do_extract(path, temp_path, opener, mode, extractor, progress_callback)
     except (OSError, zlib.error, tarfile.ReadError, EOFError) as ex:
         logger.error("Extraction failed: %s", ex)
         raise ExtractError(str(ex)) from ex
@@ -70,7 +80,7 @@ def extract_archive(path: str, to_directory: str = ".", merge_single: bool = Tru
         if inner_extractor:
             logger.debug("Nested archive detected (%s), extracting inner layer", inner_extractor)
             try:
-                return extract_archive(temp_path, to_directory, merge_single, inner_extractor)
+                return extract_archive(temp_path, to_directory, merge_single, inner_extractor, progress_callback)
             finally:
                 system.delete_folder(temp_dir)
 
@@ -169,17 +179,19 @@ def _random_id():
     return str(uuid.uuid4())[:8]
 
 
-def _do_extract(archive: str, dest: str, opener, mode: str | None = None, extractor=None) -> None:
+def _do_extract(
+    archive: str, dest: str, opener, mode: str | None = None, extractor=None, progress_callback=None
+) -> None:
     if opener == "gz":
         _decompress_gz(archive, dest)
     elif opener == "7zip":
-        _extract_7zip(archive, dest, archive_type=extractor)
+        _extract_7zip(archive, dest, archive_type=extractor, progress_callback=progress_callback)
     elif opener == "exe":
-        _extract_exe(archive, dest)
+        _extract_exe(archive, dest, progress_callback)
     elif opener == "innoextract":
         _extract_gog(archive, dest)
     elif opener == "deb":
-        _extract_deb(archive, dest)
+        _extract_deb(archive, dest, progress_callback)
     elif opener == "AppImage":
         _extract_AppImage(archive, dest)
     else:
@@ -202,12 +214,54 @@ def _decompress_gz(file_path: str, dest_path: str):
         gzipped_file.close()
 
 
-def _extract_7zip(path: str, dest: str, archive_type: str | None = None) -> None:
-    _7zip_path = _get_7zip_path()
-    command = [_7zip_path, "x", path, "-o{}".format(dest), "-aoa"]
+def _extract_7zip(path: str, dest: str, archive_type: str | None = None, progress_callback=None) -> None:
+    command = [_get_7zip_path(), "x", path, f"-o{dest}", "-aoa", "-y", "-bsp1"]
     if archive_type and archive_type != "auto":
-        command.append("-t{}".format(archive_type))
-    subprocess.call(command)
+        command.append(f"-t{archive_type}")
+
+    last_percent = -1
+
+    def report(percent):
+        nonlocal last_percent
+        if percent != last_percent:
+            last_percent = percent
+            logger.info("Extracting %s: %d%%", os.path.basename(path), percent)
+            if progress_callback:
+                progress_callback(percent)
+
+    report(0)
+    # Progress is rewritten with carriage returns/backspaces instead of newlines.
+    # Read incrementally so pipe buffering cannot defer updates until process exit.
+    with subprocess.Popen(command, stdout=subprocess.PIPE) as process:
+        previous_handler = None
+        if multiprocessing.current_process().name != "MainProcess":
+
+            def terminate_extractor(_signum, _frame):
+                process.kill()
+                raise SystemExit()
+
+            previous_handler = signal.signal(signal.SIGTERM, terminate_extractor)
+        frame = bytearray()
+        try:
+            while chunk := process.stdout.read(1):
+                if chunk in (b"\r", b"\n", b"\b"):
+                    frame.clear()
+                else:
+                    frame.extend(chunk)
+                    if chunk == b"%":
+                        match = re.match(rb"^\s*(\d{1,3})%$", frame)
+                        if match and int(match[1]) <= 100:
+                            # Completion is only reported after a successful exit.
+                            report(min(int(match[1]), 99))
+                    if len(frame) > 4096:
+                        frame.clear()
+        finally:
+            if previous_handler is not None:
+                signal.signal(signal.SIGTERM, previous_handler)
+        return_code = process.wait()
+    if return_code:
+        raise ExtractError(f"7z failed to extract {path} (exit code {return_code})")
+    report(100)
 
 
 def _get_7zip_path() -> str:
@@ -223,7 +277,7 @@ def _get_7zip_path() -> str:
         return system.find_required_executable("7za")
 
 
-def _extract_exe(path: str, dest: str) -> None:
+def _extract_exe(path: str, dest: str, progress_callback=None) -> None:
     if _check_inno_exe(path):
         _decompress_gog(path, dest)
     else:
@@ -232,7 +286,7 @@ def _extract_exe(path: str, dest: str) -> None:
         command = [_7zip_path, "t", path]
         return_code = subprocess.call(command)
         if return_code == 0:
-            _extract_7zip(path, dest)
+            _extract_7zip(path, dest, progress_callback=progress_callback)
         else:
             raise RuntimeError("specified exe is not an archive or GOG setup file")
 
@@ -282,9 +336,9 @@ def _extract_gog(path: str, dest: str) -> None:
         raise RuntimeError("specified exe is not a GOG setup file")
 
 
-def _extract_deb(archive: str, dest: str) -> None:
+def _extract_deb(archive: str, dest: str, progress_callback=None) -> None:
     """Extract the contents of a deb file to a destination folder"""
-    _extract_7zip(archive, dest, archive_type="ar")
+    _extract_7zip(archive, dest, archive_type="ar", progress_callback=progress_callback)
     debian_folder = os.path.join(dest, "debian")
     os.makedirs(debian_folder)
 
@@ -299,7 +353,7 @@ def _extract_deb(archive: str, dest: str) -> None:
     for extension in data_file_exts:
         data_tar_path = os.path.join(dest, "data.tar{}".format(extension))
         if os.path.exists(data_tar_path):
-            extract_archive(data_tar_path, dest)
+            extract_archive(data_tar_path, dest, progress_callback=progress_callback)
             os.remove(data_tar_path)
             break
 
