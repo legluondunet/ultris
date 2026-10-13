@@ -558,7 +558,7 @@ class CommandsMixin:
         """Forward worker progress to the installation window in the parent process."""
 
         def on_progress(percent):
-            self.interpreter_ui_delegate.report_progress(percent / 100.0, _("Extraction: %d%%") % percent)
+            self.interpreter_ui_delegate.report_progress(percent / 100.0, f"{percent} %")
 
         try:
             return self._killable_process(extract.extract_archive, *args, progress_callback=on_progress)
