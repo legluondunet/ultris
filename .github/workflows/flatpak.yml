@@ -21,6 +21,8 @@ permissions:
 jobs:
   flatpak:
     name: Flatpak (x86_64)
+    # This feature is currently tested with native builds and AppImage only.
+    if: github.event_name != 'pull_request' || github.head_ref != 'feature/show-build-commit'
     runs-on: ubuntu-24.04
     timeout-minutes: 300
     steps:
@@ -114,4 +116,5 @@ jobs:
           path: flatpak-packaging/Lutris-x86_64.flatpak
           if-no-files-found: error
           retention-days: 14
+
 
