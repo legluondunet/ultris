@@ -112,14 +112,103 @@ updated = updated.replace(
 
 
 # Modernise video compatibility libraries and the GLX diagnostic tool.
-old_module = "  - name: v4l2-utils\n    config-opts: &v4l2_config_opts\n      - --disable-v4l-utils\n      - --disable-qv4l2\n      - --disable-qvidcap\n    sources: &v4l2_sources\n      - type: archive\n        url: https://linuxtv.org/downloads/v4l-utils/v4l-utils-1.20.0.tar.bz2\n        sha256: 956118713f7ccb405c55c7088a6a2490c32d54300dd9a30d8d5008c28d3726f7\n\n  - name: v4l2-utils-32bit\n    build-options:\n      arch:\n        x86_64: *compat_i386_opts\n    config-opts: *v4l2_config_opts\n    sources: *v4l2_sources\n\n"
-new_module = "  - name: v4l2-utils\n    buildsystem: meson\n    config-opts: &v4l2_config_opts\n      - -Dv4l-utils=false\n      - -Dqv4l2=disabled\n      - -Dqvidcap=disabled\n      - -Dbpf=disabled\n      - -Dv4l2-tracer=disabled\n      - -Ddoxygen-doc=disabled\n    sources: &v4l2_sources\n      - type: archive\n        url: https://linuxtv.org/downloads/v4l-utils/v4l-utils-1.32.0.tar.xz\n        sha256: 6828828a17775526eb93fb258a9294d1d1073d633c344dd71ecd4e7a1ffb7dfc\n\n  - name: v4l2-utils-32bit\n    buildsystem: meson\n    build-options:\n      arch:\n        x86_64: *compat_i386_opts\n    config-opts: *v4l2_config_opts\n    sources: *v4l2_sources\n\n"
+old_module = (
+    "  - name: v4l2-utils\n"
+    "    config-opts: &v4l2_config_opts\n"
+    "      - --disable-v4l-utils\n"
+    "      - --disable-qv4l2\n"
+    "      - --disable-qvidcap\n"
+    "    sources: &v4l2_sources\n"
+    "      - type: archive\n"
+    "        url: https://linuxtv.org/downloads/v4l-utils/v4l-utils-1.20.0.tar.bz2\n"
+    "        sha256: 956118713f7ccb405c55c7088a6a2490c32d54300dd9a30d8d5008c28d3726f7\n"
+    "\n"
+    "  - name: v4l2-utils-32bit\n"
+    "    build-options:\n"
+    "      arch:\n"
+    "        x86_64: *compat_i386_opts\n"
+    "    config-opts: *v4l2_config_opts\n"
+    "    sources: *v4l2_sources\n"
+    "\n"
+)
+new_module = (
+    "  - name: v4l2-utils\n"
+    "    buildsystem: meson\n"
+    "    config-opts: &v4l2_config_opts\n"
+    "      - -Dv4l-utils=false\n"
+    "      - -Dqv4l2=disabled\n"
+    "      - -Dqvidcap=disabled\n"
+    "      - -Dbpf=disabled\n"
+    "      - -Dv4l2-tracer=disabled\n"
+    "      - -Ddoxygen-doc=disabled\n"
+    "    sources: &v4l2_sources\n"
+    "      - type: archive\n"
+    "        url: https://linuxtv.org/downloads/v4l-utils/v4l-utils-1.32.0.tar.xz\n"
+    "        sha256: 6828828a17775526eb93fb258a9294d1d1073d633c344dd71ecd4e7a1ffb7dfc\n"
+    "\n"
+    "  - name: v4l2-utils-32bit\n"
+    "    buildsystem: meson\n"
+    "    build-options:\n"
+    "      arch:\n"
+    "        x86_64: *compat_i386_opts\n"
+    "    config-opts: *v4l2_config_opts\n"
+    "    sources: *v4l2_sources\n"
+    "\n"
+)
 if updated.count(old_module) != 1:
     sys.exit("Expected exactly one original v4l-utils module block")
 updated = updated.replace(old_module, new_module, 1)
 
-old_module = "  - name: mesa-demos\n    config-opts:\n      - --without-glut\n      - --bindir=/app/lib/mesa-demos\n    make-args:\n      - -C\n      - src/xdemos\n      - glxinfo\n    no-make-install: true\n    build-commands:\n      - install -D src/xdemos/glxinfo -t /app/bin/\n    sources:\n      - type: archive\n        url: https://mesa.freedesktop.org/archive/demos/mesa-demos-8.4.0.tar.bz2\n        sha256: 01e99c94a0184e63e796728af89bfac559795fb2a0d6f506fa900455ca5fff7d\n    cleanup:\n      - /lib/mesa-demos\n    modules:\n      - shared-modules/glew/glew.json\n\n"
-new_module = "  - name: mesa-demos\n    buildsystem: meson\n    config-opts:\n      - -Dgl=enabled\n      - -Dx11=enabled\n      - -Degl=disabled\n      - -Dgles1=disabled\n      - -Dgles2=disabled\n      - -Dosmesa=disabled\n      - -Dwayland=disabled\n      - -Dvulkan=disabled\n      - -Dlibdrm=disabled\n    make-args:\n      - src/xdemos/glxinfo\n    no-make-install: true\n    build-commands:\n      - install -Dm755 src/xdemos/glxinfo /app/bin/glxinfo\n    sources:\n      - type: archive\n        url: https://archive.mesa3d.org/demos/mesa-demos-9.0.0.tar.xz\n        sha256: 3046a3d26a7b051af7ebdd257a5f23bfeb160cad6ed952329cdff1e9f1ed496b\n    cleanup:\n      - /lib/mesa-demos\n    modules:\n      - shared-modules/glew/glew.json\n\n"
+old_module = (
+    "  - name: mesa-demos\n"
+    "    config-opts:\n"
+    "      - --without-glut\n"
+    "      - --bindir=/app/lib/mesa-demos\n"
+    "    make-args:\n"
+    "      - -C\n"
+    "      - src/xdemos\n"
+    "      - glxinfo\n"
+    "    no-make-install: true\n"
+    "    build-commands:\n"
+    "      - install -D src/xdemos/glxinfo -t /app/bin/\n"
+    "    sources:\n"
+    "      - type: archive\n"
+    "        url: https://mesa.freedesktop.org/archive/demos/mesa-demos-8.4.0.tar.bz2\n"
+    "        sha256: 01e99c94a0184e63e796728af89bfac559795fb2a0d6f506fa900455ca5fff7d\n"
+    "    cleanup:\n"
+    "      - /lib/mesa-demos\n"
+    "    modules:\n"
+    "      - shared-modules/glew/glew.json\n"
+    "\n"
+)
+new_module = (
+    "  - name: mesa-demos\n"
+    "    buildsystem: meson\n"
+    "    config-opts:\n"
+    "      - -Dglut=disabled\n"
+    "      - -Dx11=enabled\n"
+    "      - -Degl=disabled\n"
+    "      - -Dgles1=disabled\n"
+    "      - -Dgles2=disabled\n"
+    "      - -Dosmesa=disabled\n"
+    "      - -Dwayland=disabled\n"
+    "      - -Dvulkan=disabled\n"
+    "      - -Dlibdrm=disabled\n"
+    "    make-args:\n"
+    "      - src/xdemos/glxinfo\n"
+    "    no-make-install: true\n"
+    "    build-commands:\n"
+    "      - install -Dm755 src/xdemos/glxinfo /app/bin/glxinfo\n"
+    "    sources:\n"
+    "      - type: archive\n"
+    "        url: https://archive.mesa3d.org/demos/mesa-demos-9.0.0.tar.xz\n"
+    "        sha256: 3046a3d26a7b051af7ebdd257a5f23bfeb160cad6ed952329cdff1e9f1ed496b\n"
+    "    cleanup:\n"
+    "      - /lib/mesa-demos\n"
+    "    modules:\n"
+    "      - shared-modules/glew/glew.json\n"
+    "\n"
+)
 if updated.count(old_module) != 1:
     sys.exit("Expected exactly one original mesa-demos module block")
 updated = updated.replace(old_module, new_module, 1)
@@ -201,7 +290,8 @@ updated = updated.replace(
     "          - -DSDL2IMAGE_TESTS=OFF\n"
     "        sources:\n"
     "          - type: archive\n"
-    "            url: https://github.com/libsdl-org/SDL_image/releases/download/release-2.8.12/SDL2_image-2.8.12.tar.gz\n"
+    "            url: https://github.com/libsdl-org/SDL_image/releases/download/"
+    "release-2.8.12/SDL2_image-2.8.12.tar.gz\n"
     "            sha256: 393f5efb50536ec13ca4f4affb69cc9966d3c3f969e6c5e701faddf9f9785381\n"
     "      - name: asio\n"
     "        buildsystem: simple\n"
@@ -320,3 +410,4 @@ ayatana_manifest.write_text(json.dumps(ayatana, indent=2) + "\n")
 
 manifest.write_text(updated)
 print("Flathub manifest now builds the fork with GLU and Ayatana libraries in /app/lib.")
+
